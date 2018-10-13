@@ -81,47 +81,7 @@ void Manager::Run()
 
 			std::cout << "Solved.";
 
-			Container* curr = open.top();
-			bool go = true;
-			int steps = 0;
-
-			std::cout << std::endl;
-
-			while (go)
-			{
-				for (int i = 0; i < n * n; ++i)
-				{
-					if(i == (n * n - 1))
-					{
-						std::cout << curr->b[i];
-					}
-					else
-					{
-						std::cout << curr->b[i] << ", ";
-					}
-				}
-
-				std::cout << std::endl;
-
-				if (curr->parent)
-				{
-					curr = curr->parent;
-				}
-				else
-				{
-					go = false;
-				}
-
-				++steps;
-			}
-
-			std::cout << std::endl;
-
-			std::chrono::duration<double> t = end - start;
-
-			std::cout << steps << " steps in " << t.count() << "s.";
-
-			std::cin.get();
+			printSolution(open.top());
 
 			return;
 		}
@@ -428,4 +388,49 @@ bool Manager::checkDuplicate(Container* move)
 	}
 
 	return true;
+}
+
+void Manager::printSolution(Container* top)
+{
+	std::chrono::duration<double> t = end - start;
+
+	Container* curr = top;
+	bool go = true;
+	int steps = 0;
+
+	std::cout << std::endl;
+
+	while (go)
+	{
+		for (int i = 0; i < n * n; ++i)
+		{
+			if (i == (n * n - 1))
+			{
+				std::cout << curr->b[i];
+			}
+			else
+			{
+				std::cout << curr->b[i] << ", ";
+			}
+		}
+
+		std::cout << std::endl;
+
+		if (curr->parent)
+		{
+			curr = curr->parent;
+		}
+		else
+		{
+			go = false;
+		}
+
+		++steps;
+	}
+
+	std::cout << std::endl;
+
+	std::cout << steps << " steps in " << t.count() << "s.";
+
+	std::cin.get();
 }

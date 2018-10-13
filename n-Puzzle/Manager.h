@@ -52,6 +52,8 @@ public:
 
 	bool checkDuplicate(Container* move);
 
+	void printSolution(Container* top);
+
 private:
 	std::priority_queue<Container*, std::vector<Container*>, GreaterThanByCost> open;
 	std::unordered_map<UINT64, bool> closed;
