@@ -53,7 +53,7 @@ Manager::Manager()
 		}
 	} while (!checkSolvable());
 
-	current->manhattan = calculateManhattan(current->b);
+	current->heuristic = calculateManhattan(current->b) + calculateLinear(current->b);
 
 	open.push(current);
 }
@@ -73,13 +73,11 @@ void Manager::Run()
 	while (!solved)
 	{
 		//Check if open.top is solved
-		if (open.top()->manhattan == 0)
+		if (open.top()->heuristic == 0)
 		{
 			end = std::chrono::system_clock::now();
 
 			solved = true;
-
-			std::cout << "Solved.";
 
 			printSolution(open.top());
 
@@ -120,6 +118,161 @@ int Manager::calculateManhattan(int b[])
 	return manhattan;
 }
 
+//Calculate linear conflict
+int Manager::calculateLinear(int b[])
+{
+	int count = 0;
+
+	for (int i = 0; i < n * n; ++i)
+	{
+		//Check if b[i] is in the right spot
+		if (b[i] != i)
+		{
+			//Calculate row and col it's supposed to be in
+			int x = b[i] % n;
+			int y = b[i] / n;
+
+			//Calculate row and col it's in
+			int bx = i % n;
+			int by = i / n;
+
+			//Check cols
+			if (x == bx)
+			{
+				bool found = false;
+
+				//Check above
+				if (b[i] < i)
+				{
+					int colStart = i - n;
+
+					for (int j = colStart; j >= 0; j -= n)
+					{
+						if ((j != b[i]) && !found)
+						{
+							if ((b[i] - b[j]) % n == 0)
+							{
+								++count;
+							}
+						}
+						else if ((j == b[i]) && !found)
+						{
+							if ((b[i] - b[j]) % n == 0)
+							{
+								++count;
+							}
+
+							found = true;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+
+				//Check below
+				if (b[i] > i)
+				{
+					int colEnd = n * (n - 1) + bx;
+
+					for (int j = i + 4; j <= colEnd; j += 4)
+					{
+						if ((j != b[i]) && !found)
+						{
+							if ((b[i] - b[j]) % n == 0)
+							{
+								++count;
+							}
+						}
+						else if ((j == b[i]) && !found)
+						{
+							if ((b[i] - b[j]) % n == 0)
+							{
+								++count;
+							}
+
+							found = true;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+			}
+
+			//Check rows
+			if (y == by)
+			{
+				bool found = false;
+
+				//Check left
+				if (b[i] < i)
+				{
+					int rowStart = i - 1;
+
+					for (int j = rowStart; j >= by * n; --j)
+					{
+						if ((j != b[i]) && !found)
+						{
+							if (((b[i] - b[j]) < 0) && (abs(b[i] - b[j]) < n))
+							{
+								++count;
+							}
+						}
+						else if ((j == b[i]) && !found)
+						{
+							if (((b[i] - b[j]) < 0) && (abs(b[i] - b[j]) < n))
+							{
+								++count;
+							}
+
+							found = true;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+
+				//Check right
+				if (b[i] > i)
+				{
+					int nextRowStart = n * (by + 1);
+
+					for (int j = i + 1; j < nextRowStart; ++j)
+					{
+						if ((j != b[i]) && !found)
+						{
+							if (((b[i] - b[j]) > 0) && (abs(b[i] - b[j]) < n))
+							{
+								++count;
+							}
+						}
+						else if ((j == b[i]) && !found)
+						{
+							if (((b[i] - b[j]) > 0) && (abs(b[i] - b[j]) < n))
+							{
+								++count;
+							}
+
+							found = true;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return 2 * count;
+}
+
 //Check if board is solvable
 bool Manager::checkSolvable()
 {
@@ -157,20 +310,6 @@ bool Manager::checkSolvable()
 	}
 
 	return solvable;
-}
-
-//Check if current board is solution
-bool Manager::checkSolution()
-{
-	for (int i = 0; i < n * n; ++i)
-	{
-		if (current->b[i] != i)
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 //Encode binary board
@@ -352,7 +491,7 @@ void Manager::findZero()
 
 void Manager::swapPos(Container* move, int newPos)
 {
-	int hold, oldPos;
+	int oldPos;
 
 	//Calculate old pos
 	oldPos = zeroX + (zeroY * n);
@@ -364,8 +503,7 @@ void Manager::swapPos(Container* move, int newPos)
 	}
 
 	//Swap pos
-	hold = move->b[newPos];
-	move->b[oldPos] = hold;
+	move->b[oldPos] = move->b[newPos];
 	move->b[newPos] = 0;
 }
 
@@ -381,7 +519,7 @@ bool Manager::checkDuplicate(Container* move)
 	else
 	{
 		//If it hasn't been found, set container values and add to open
-		move->manhattan = calculateManhattan(move->b);
+		move->heuristic = calculateManhattan(move->b) + calculateLinear(move->b);
 		move->parent = current;
 
 		open.push(move);
@@ -395,40 +533,38 @@ void Manager::printSolution(Container* top)
 	std::chrono::duration<double> t = end - start;
 
 	Container* curr = top;
+	std::vector<Container*> rev;
 	bool go = true;
 	int steps = 0;
 
-	std::cout << std::endl;
-
-	while (go)
+	while (curr->parent)
 	{
-		for (int i = 0; i < n * n; ++i)
-		{
-			if (i == (n * n - 1))
-			{
-				std::cout << curr->b[i];
-			}
-			else
-			{
-				std::cout << curr->b[i] << ", ";
-			}
-		}
+		rev.insert(rev.begin(), curr);
 
-		std::cout << std::endl;
-
-		if (curr->parent)
-		{
-			curr = curr->parent;
-		}
-		else
-		{
-			go = false;
-		}
+		curr = curr->parent;
 
 		++steps;
 	}
 
-	std::cout << std::endl;
+	for (int i = 0; i < steps; ++i)
+	{
+		for (int j = 0; j < n * n; ++j)
+		{
+			std::cout << rev[i]->b[j] << "\t";
+
+			if (j % n == 3)
+			{
+				std::cout << std::endl;
+			}
+		}
+
+		Sleep(25);
+
+		if (i != steps - 1)
+		{
+			system("CLS");
+		}
+	}
 
 	std::cout << steps << " steps in " << t.count() << "s.";
 
