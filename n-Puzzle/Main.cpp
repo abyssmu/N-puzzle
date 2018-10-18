@@ -1,5 +1,3 @@
-#include <iomanip>
-
 #include "Functions.h"
 
 int main()
@@ -34,6 +32,9 @@ int main()
 	std::cout << std::fixed;
 	std::cout << std::setprecision(5);
 	std::cout << steps << " steps in " << t.count() << " secs.";
+
+	//Cleanup
+	cleanup(open, closed);
 
 	std::cin.get();
 

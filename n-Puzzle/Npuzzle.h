@@ -28,8 +28,8 @@ namespace Npuzzle
 	};
 
 	Point findZero(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
 		for (int i = 0; i < n * n; ++i)
 		{
@@ -44,16 +44,23 @@ namespace Npuzzle
 
 	//Count inversions in board
 	int countInv(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
-		int count = 0;
+		auto count = 0;
 
-		for (int i = 0; i < n * n - 1; ++i)
+		for (auto i = 0; i < n * n - 1; ++i)
 		{
 			for (int j = i + 1; j < n * n; ++j)
 			{
-				if (b[j] < b[i])
+				if (b[i] == 0)
+				{
+					if (b[j] < n * n)
+					{
+						++count;
+					}
+				}
+				else if (b[j] < b[i])
 				{
 					++count;
 				}
@@ -64,35 +71,32 @@ namespace Npuzzle
 	}
 
 	bool checkSolvable(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
-		//Assume board is not solvable
-		bool solvable = false;
-		int count = 0;
-
 		Point zero = findZero(b, n);
-		assert((zero.x != -1) && (zero.y != -1));
-
-		count = countInv(b, n);
+		int count = countInv(b, n);
 
 		//If width is odd and count is even
-		if ((n & 1) && (count & 0))
+		if ((n & 1) && !(count & 1))
 		{
 			return true;
 		}
-		//If width is even, zeroY pos is odd from bottom, and count is even
-		else if (((n - zero.y) & 1) && (count & 0))
+		//If width is even
+		else
 		{
-			return true;
-		}
-		//If width is even, zeroY pos is even from bottom, and count is odd
-		else if (count & 1)
-		{
-			return true;
+			//If zero y pos is odd from bottom, and count is even
+			if (((n - zero.y) & 1) && !(count & 1))
+			{
+				return true;
+			}
+			else if (count & 1)
+			{
+				return true;
+			}
 		}
 
-		return solvable;
+		return false;
 	}
 
 	std::vector<int> createBoard(
@@ -116,7 +120,7 @@ namespace Npuzzle
 
 	std::vector<int> decode(
 		std::uint_fast64_t code,
-		int n)
+		const int n)
 	{
 		static std::vector<int> b(n * n);
 
@@ -138,10 +142,10 @@ namespace Npuzzle
 	}
 
 	std::vector<int> swapPos(
-		std::vector<int> b,
-		int n,
-		Point zero,
-		int newPos)
+		const std::vector<int> b,
+		const int n,
+		const Point zero,
+		const int newPos)
 	{
 		int oldPos;
 		std::vector<int> move(n * n);
@@ -163,8 +167,8 @@ namespace Npuzzle
 	}
 
 	std::vector<int> down(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
 		Point zero = findZero(b, n);
 		int newPos = zero.y + 1;
@@ -180,8 +184,8 @@ namespace Npuzzle
 	}
 
 	std::uint_fast64_t encode(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
 		std::uint_fast64_t code = 0;
 
@@ -203,178 +207,111 @@ namespace Npuzzle
 	}
 
 	int linear(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
-		int count = 0;
+		auto conflicts = 0;
 
-		for (int i = 0; i < n * n; ++i)
+		std::vector<bool> inCol(n * n);
+		std::vector<bool> inRow(n * n);
+
+		for (auto y = 0; y < n; ++y)
 		{
-			//Check if b[i] is in the right spot
-			if (b[i] != i)
+			for (auto x = 0; x < n; ++x)
 			{
-				//Calculate row and col it's supposed to be in
-				int x = b[i] % n;
-				int y = b[i] / n;
+				auto i = y * n + x;
 
-				//Calculate row and col it's in
-				int bx = i % n;
-				int by = i / n;
+				auto bX = b[i] % n;
+				auto bY = b[i] / n;
 
-				//Check cols
-				if (x == bx)
+				inCol[i] = (bX == x);
+				inRow[i] = (bY == y);
+			}
+		}
+
+		for (auto y = 0; y < n; ++y)
+		{
+			for (auto x = 0; x < n; ++x)
+			{
+				auto i = y * n + x;
+
+				if (b[i] == 0)
 				{
-					bool found = false;
+					continue;
+				}
 
-					//Check above
-					if (b[i] < i)
+				if (inCol[i])
+				{
+					for (auto z = y; z < n; ++z)
 					{
-						int colStart = i - n;
+						auto j = z * n + x;
 
-						for (int j = colStart; j >= 0; j -= n)
+						if (b[j] == 0)
 						{
-							if ((j != b[i]) && !found)
-							{
-								if ((b[i] - b[j]) % n == 0)
-								{
-									++count;
-								}
-							}
-							else if ((j == b[i]) && !found)
-							{
-								if ((b[i] - b[j]) % n == 0)
-								{
-									++count;
-								}
-
-								found = true;
-							}
-							else
-							{
-								break;
-							}
+							continue;
 						}
-					}
 
-					//Check below
-					if (b[i] > i)
-					{
-						int colEnd = n * (n - 1) + bx;
-
-						for (int j = i + 4; j <= colEnd; j += 4)
+						if (inCol[j] && (b[j] < b[i]))
 						{
-							if ((j != b[i]) && !found)
-							{
-								if ((b[i] - b[j]) % n == 0)
-								{
-									++count;
-								}
-							}
-							else if ((j == b[i]) && !found)
-							{
-								if ((b[i] - b[j]) % n == 0)
-								{
-									++count;
-								}
-
-								found = true;
-							}
-							else
-							{
-								break;
-							}
+							++conflicts;
 						}
 					}
 				}
 
-				//Check rows
-				if (y == by)
+				if (inRow[i])
 				{
-					bool found = false;
-
-					//Check left
-					if (b[i] < i)
+					for (auto z = x; z < n; ++z)
 					{
-						int rowStart = i - 1;
+						auto j = z * n + x;
 
-						for (int j = rowStart; j >= by * n; --j)
+						if (b[j] == 0)
 						{
-							if ((j != b[i]) && !found)
-							{
-								if (((b[i] - b[j]) < 0) && (abs(b[i] - b[j]) < n))
-								{
-									++count;
-								}
-							}
-							else if ((j == b[i]) && !found)
-							{
-								if (((b[i] - b[j]) < 0) && (abs(b[i] - b[j]) < n))
-								{
-									++count;
-								}
-
-								found = true;
-							}
-							else
-							{
-								break;
-							}
+							continue;
 						}
-					}
 
-					//Check right
-					if (b[i] > i)
-					{
-						int nextRowStart = n * (by + 1);
-
-						for (int j = i + 1; j < nextRowStart; ++j)
+						if (inRow[j] && (b[j] < b[i]))
 						{
-							if ((j != b[i]) && !found)
-							{
-								if (((b[i] - b[j]) > 0) && (abs(b[i] - b[j]) < n))
-								{
-									++count;
-								}
-							}
-							else if ((j == b[i]) && !found)
-							{
-								if (((b[i] - b[j]) > 0) && (abs(b[i] - b[j]) < n))
-								{
-									++count;
-								}
-
-								found = true;
-							}
-							else
-							{
-								break;
-							}
+							++conflicts;
 						}
 					}
 				}
 			}
 		}
 
-		return 2 * count;
+		return 2 * conflicts;
 	}
 
 	int manhattan(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
-		//Create solved board
 		int m = 0;
+
+		std::vector<int> solution(n * n);
+		std::iota(solution.begin(), solution.end(), 1);
+
+		solution[n * n - 1] = 0;
 
 		//Calculate manhattan distance for each value
 		for (int i = 0; i < n * n; ++i)
 		{
-			if (b[i] != i)
+			if (b[i] != solution[i])
 			{
 				int bX, bY, x, y;
 
-				bX = b[i] % n;
-				bY = b[i] / n;
+				//Calculate goal pos
+				if (b[i] == 0)
+				{
+					bX = n - 1;
+					bY = n - 1;
+				}
+				else
+				{
+					bX = b[i] % n;
+					bY = b[i] / n;
+				}
 
+				//Calculate the current pos
 				x = i % n;
 				y = i / n;
 
@@ -386,15 +323,15 @@ namespace Npuzzle
 	}
 	
 	int heuristic(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
 		return manhattan(b, n) + linear(b, n);
 	}
 
 	std::vector<int> left(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
 		Point zero = findZero(b, n);
 		int newPos = zero.x - 1;
@@ -410,8 +347,8 @@ namespace Npuzzle
 	}
 
 	std::vector<int> right(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
 		Point zero = findZero(b, n);
 		int newPos = zero.x + 1;
@@ -427,8 +364,8 @@ namespace Npuzzle
 	}
 
 	std::vector<int> up(
-		std::vector<int> b,
-		int n)
+		const std::vector<int> b,
+		const int n)
 	{
 		Point zero = findZero(b, n);
 		int newPos = zero.y - 1;

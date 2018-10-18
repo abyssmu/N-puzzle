@@ -1,4 +1,5 @@
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <unordered_map>
 #include <queue>
@@ -9,7 +10,7 @@
 bool duplicate(
 	std::vector<int> b,
 	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
-	int n)
+	const int n)
 {
 	return closed.count(Npuzzle::encode(b, n));
 }
@@ -19,33 +20,33 @@ void addQueue(
 	std::vector<int> parent,
 	std::priority_queue<Npuzzle::Container*, std::vector<Npuzzle::Container*>, Npuzzle::GreaterThanByHeur>& open,
 	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
-	int n)
+	const int n)
 {
-	Npuzzle::Container* c = new Npuzzle::Container;
+	auto c = new Npuzzle::Container;
 
 	c->code = Npuzzle::encode(b, n);
 	c->heuristic = Npuzzle::heuristic(b, n);
 
-	open.push(c);
+	open.emplace(c);
 
 	closed.insert({ Npuzzle::encode(b, n), Npuzzle::encode(parent, n) });
 }
 
 void addMoves(
-	std::vector<int>& b,
+	const std::vector<int> b,
 	std::priority_queue<Npuzzle::Container*, std::vector<Npuzzle::Container*>, Npuzzle::GreaterThanByHeur>& open,
 	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
-	int n)
+	const int n)
 {
-	std::vector<std::vector<int>> moves(4);
-	std::vector<int> parent = b;
+	auto moves = std::vector<std::vector<int>>(4);
+	auto parent = b;
 
 	moves[0] = Npuzzle::up(b, n);
 	moves[1] = Npuzzle::down(b, n);
 	moves[2] = Npuzzle::left(b, n);
 	moves[3] = Npuzzle::right(b, n);
 
-	for (int i = 0; i < 4; ++i)
+	for (auto i = 0; i < 4; ++i)
 	{
 		if (moves[i].size() == (n * n))
 		{
@@ -57,40 +58,59 @@ void addMoves(
 	}
 }
 
+void cleanup(
+	std::priority_queue<Npuzzle::Container*, std::vector<Npuzzle::Container*>, Npuzzle::GreaterThanByHeur>& open,
+	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed)
+{
+	while (!open.empty())
+	{
+		delete open.top();
+		open.pop();
+	}
+
+	closed.clear();
+}
+
+void printBoard(
+	const std::vector<int> b,
+	const int n)
+{
+	for (auto j = 0; j < n * n; ++j)
+	{
+		std::cout << b[j] << "\t";
+
+		if (j % n == 3)
+		{
+			std::cout << std::endl;
+		}
+	}
+}
+
 int print(
 	std::uint_fast64_t b,
 	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t> closed,
-	int n)
+	const int n)
 {
-	std::vector<std::vector<int>> rev;
-	int size = 0;
+	std::vector<std::vector<int>> solution;
 
-	while (closed[b] != 0)
+	solution.push_back(Npuzzle::decode(b, n));
+
+	for (auto p = closed[b]; p != 0; p = closed[p])
 	{
-		rev.insert(rev.begin(), Npuzzle::decode(b, n));
-
-		b = closed[b];
+		solution.push_back(Npuzzle::decode(p, n));
 	}
-
-	size = rev.size();
 
 	system("CLS");
 
-	for (int i = 0; i < size; ++i)
-	{
-		for (int j = 0; j < n * n; ++j)
-		{
-			std::cout << rev[i][j] << "\t";
+	auto size = int(solution.size() - 1);
 
-			if (j % n == 3)
-			{
-				std::cout << std::endl;
-			}
-		}
+	for (auto i = size; i >= 0; --i)
+	{
+		printBoard(solution[i], n);
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(25));
 
-		if (i != (size - 1))
+		if (i != 0)
 		{
 			system("CLS");
 		}
@@ -99,13 +119,26 @@ int print(
 	return size;
 }
 
+void reset(
+	std::vector<int>& curr,
+	std::priority_queue<Npuzzle::Container*, std::vector<Npuzzle::Container*>, Npuzzle::GreaterThanByHeur>& open,
+	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
+	const int n)
+{
+	cleanup(open, closed);
+
+	curr = Npuzzle::createBoard(n);
+
+	addQueue(curr, std::vector<int>(n * n), open, closed, n);
+}
+
 void solve(
 	std::vector<int>& curr,
 	std::priority_queue<Npuzzle::Container*, std::vector<Npuzzle::Container*>, Npuzzle::GreaterThanByHeur>& open,
 	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
-	int n)
+	const int n)
 {
-	bool solved = false;
+	auto solved = false;
 
 	//Create initial board
 	curr = Npuzzle::createBoard(n);
@@ -118,11 +151,14 @@ void solve(
 		{
 			solved = true;
 		}
+		else
+		{
+			curr = Npuzzle::decode(open.top()->code, n);
 
-		curr = Npuzzle::decode(open.top()->code, n);
+			delete open.top();
+			open.pop();
 
-		open.pop();
-
-		addMoves(curr, open, closed, n);
+			addMoves(curr, open, closed, n);
+		}
 	}
 }
