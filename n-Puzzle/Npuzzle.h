@@ -6,32 +6,39 @@
 
 namespace Npuzzle
 {
-	struct Point
-	{
-		int x, y;
-	};
+	using Board = std::vector<int>;
+	using i64 = std::uint_fast64_t;
 
-	struct Container
+	namespace Structures
 	{
-		int heuristic;
-		std::uint_fast64_t code;
-	};
 
-	struct GreaterThanByHeur
-	{
-		bool operator()(
-			const Container* lhs,
-			const Container* rhs)
+		struct Point
 		{
-			return lhs->heuristic > rhs->heuristic;
-		}
-	};
+			int x, y;
+		};
 
-	Point findZero(
-		const std::vector<int> b,
+		struct Container
+		{
+			int heuristic;
+			std::uint_fast64_t code;
+		};
+
+		struct LessThanByHeur
+		{
+			bool operator()(
+				const Container* lhs,
+				const Container* rhs) const
+			{
+				return lhs->heuristic < rhs->heuristic;
+			}
+		};
+	}
+
+	Structures::Point findZero(
+		const Board b,
 		const int n)
 	{
-		for (int i = 0; i < n * n; ++i)
+		for (auto i = 0; i < n * n; ++i)
 		{
 			if (b[i] == 0)
 			{
@@ -43,15 +50,15 @@ namespace Npuzzle
 	}
 
 	//Count inversions in board
-	int countInv(
-		const std::vector<int> b,
+	int inversions(
+		const Board b,
 		const int n)
 	{
 		auto count = 0;
 
 		for (auto i = 0; i < n * n - 1; ++i)
 		{
-			for (int j = i + 1; j < n * n; ++j)
+			for (auto j = i + 1; j < n * n; ++j)
 			{
 				if (b[i] == 0)
 				{
@@ -70,12 +77,12 @@ namespace Npuzzle
 		return count;
 	}
 
-	bool checkSolvable(
-		const std::vector<int> b,
+	bool solvable(
+		const Board b,
 		const int n)
 	{
-		Point zero = findZero(b, n);
-		int count = countInv(b, n);
+		auto zero = findZero(b, n);
+		auto count = inversions(b, n);
 
 		//If width is odd and count is even
 		if ((n & 1) && !(count & 1))
@@ -99,34 +106,34 @@ namespace Npuzzle
 		return false;
 	}
 
-	std::vector<int> createBoard(
+	Board createBoard(
 		const int n)
 	{
-		std::vector<int> board(n * n);
-		std::mt19937_64 rng = std::mt19937_64(std::random_device()());
+		auto b = Board(n * n);
+		auto rng = std::mt19937_64(std::random_device()());
 
 		do
 		{
 			//Fill vector from 0 to n * n
-			std::iota(board.begin(), board.end(), 0);
+			std::iota(b.begin(), b.end(), 0);
 
 			//Randomize vector
-			std::shuffle(board.begin(), board.end(), rng);
+			std::shuffle(b.begin(), b.end(), rng);
 
-		} while (!checkSolvable(board, n));
+		} while (!solvable(b, n));
 
-		return board;
+		return b;
 	}
 
-	std::vector<int> decode(
-		std::uint_fast64_t code,
+	Board decode(
+		i64& code,
 		const int n)
 	{
-		static std::vector<int> b(n * n);
+		static Board b(n * n);
 
-		for (int i = (n * n) - 1; i >= 0; --i)
+		for (auto i = (n * n) - 1; i >= 0; --i)
 		{
-			int val = 0;
+			auto val = 0;
 
 			//Get first n bits
 			val = code & ((1 << n) - 1);
@@ -141,20 +148,20 @@ namespace Npuzzle
 		return b;
 	}
 
-	std::vector<int> swapPos(
-		const std::vector<int> b,
+	Board swapPos(
+		const Board b,
 		const int n,
-		const Point zero,
+		const Structures::Point zero,
 		const int newPos)
 	{
-		int oldPos;
-		std::vector<int> move(n * n);
+		auto oldPos = 0;
+		Board move(n * n);
 
 		//Calculate old pos
 		oldPos = zero.x + (zero.y * n);
 
 		//Copy current board
-		for (int i = 0; i < n * n; ++i)
+		for (auto i = 0; i < n * n; ++i)
 		{
 			move[i] = b[i];
 		}
@@ -166,30 +173,30 @@ namespace Npuzzle
 		return move;
 	}
 
-	std::vector<int> down(
-		const std::vector<int> b,
+	Board down(
+		const Board b,
 		const int n)
 	{
-		Point zero = findZero(b, n);
-		int newPos = zero.y + 1;
+		Structures::Point zero = findZero(b, n);
+		auto newPos = zero.y + 1;
 
 		//Check if move is possible
 		if (newPos > (n - 1))
 		{
-			return std::vector<int>(0);
+			return Board(0);
 		}
 
 		//Create new board based on newPos
 		return swapPos(b, n, zero, zero.x + (newPos * n));
 	}
 
-	std::uint_fast64_t encode(
-		const std::vector<int> b,
+	i64 encode(
+		const Board b,
 		const int n)
 	{
-		std::uint_fast64_t code = 0;
+		i64 code = 0;
 
-		for (int i = 0; i < n * n; ++i)
+		for (auto i = 0; i < n * n; ++i)
 		{
 			//Set first n bits
 			if (i == 0)
@@ -207,13 +214,12 @@ namespace Npuzzle
 	}
 
 	int linear(
-		const std::vector<int> b,
+		const Board b,
 		const int n)
 	{
-		auto conflicts = 0;
+		auto count = 0;
 
-		std::vector<bool> inCol(n * n);
-		std::vector<bool> inRow(n * n);
+		Board inCol(n * n), inRow(n * n);
 
 		for (auto y = 0; y < n; ++y)
 		{
@@ -221,8 +227,24 @@ namespace Npuzzle
 			{
 				auto i = y * n + x;
 
-				auto bX = b[i] % n;
-				auto bY = b[i] / n;
+				if (b[i] == 0)
+				{
+					continue;
+				}
+
+				auto bX = 0;
+				auto bY = 0;
+
+				if (b[i] % n == 0)
+				{
+					bX = n - 1;
+					bY = b[i] / n - 1;
+				}
+				else
+				{
+					bX = b[i] % n - 1;
+					bY = b[i] / n;
+				}
 
 				inCol[i] = (bX == x);
 				inRow[i] = (bY == y);
@@ -251,69 +273,96 @@ namespace Npuzzle
 							continue;
 						}
 
-						if (inCol[j] && (b[j] < b[i]))
+						if (inCol[j])
 						{
-							++conflicts;
+							if ((b[j] < b[i]) && ((abs(b[j] - b[i]) % n) == 0))
+							{
+								++count;
+							}
 						}
 					}
 				}
 
 				if (inRow[i])
 				{
-					for (auto z = x; z < n; ++z)
+					auto bI = b[i];
+
+					for (auto z = x + 1; z < n; ++z)
 					{
-						auto j = z * n + x;
+						auto j = y * n + z;
+						auto bJ = b[j];
 
 						if (b[j] == 0)
 						{
 							continue;
 						}
 
-						if (inRow[j] && (b[j] < b[i]))
+						if (inRow[j])
 						{
-							++conflicts;
+							if ((bJ < bI) && (0 <= (bI - bJ)) && ((bI - bJ) < n))
+							{
+								++count;
+							}
 						}
 					}
 				}
 			}
 		}
 
-		return 2 * conflicts;
+		return 2 * count;
 	}
 
 	int manhattan(
-		const std::vector<int> b,
+		const Board b,
 		const int n)
 	{
-		int m = 0;
+		auto m = 0;
 
-		std::vector<int> solution(n * n);
+		Board solution(n * n);
 		std::iota(solution.begin(), solution.end(), 1);
 
 		solution[n * n - 1] = 0;
 
 		//Calculate manhattan distance for each value
-		for (int i = 0; i < n * n; ++i)
+		for (auto i = 0; i < n * n; ++i)
 		{
 			if (b[i] != solution[i])
 			{
-				int bX, bY, x, y;
+				auto bX = 0;
+				auto bY = 0;
+				auto x = 0;
+				auto y = 0;
 
-				//Calculate goal pos
 				if (b[i] == 0)
 				{
+					++i;
+				}
+
+				//Calculate goal pos
+				if ((b[i] % n) == 0)
+				{
 					bX = n - 1;
-					bY = n - 1;
+					bY = b[i] / n - 1;
 				}
 				else
 				{
-					bX = b[i] % n;
+					bX = b[i] % n - 1;
 					bY = b[i] / n;
 				}
 
 				//Calculate the current pos
-				x = i % n;
-				y = i / n;
+				auto val = i + 1;
+
+				if ((val % n) == 0)
+				{
+					x = n - 1;
+					y = val / n - 1;
+				}
+				else
+				{
+					x = val % n - 1;
+					y = val / n;
+				}
 
 				m += abs(bX - x) + abs(bY - y);
 			}
@@ -323,23 +372,23 @@ namespace Npuzzle
 	}
 	
 	int heuristic(
-		const std::vector<int> b,
+		const Board b,
 		const int n)
 	{
 		return manhattan(b, n) + linear(b, n);
 	}
 
-	std::vector<int> left(
-		const std::vector<int> b,
+	Board left(
+		const Board b,
 		const int n)
 	{
-		Point zero = findZero(b, n);
-		int newPos = zero.x - 1;
+		Structures::Point zero = findZero(b, n);
+		auto newPos = zero.x - 1;
 
 		//Check if move is possible
 		if (newPos < 0)
 		{
-			return std::vector<int>(0);
+			return Board(0);
 		}
 
 		//Create new board based on newPos
@@ -347,33 +396,33 @@ namespace Npuzzle
 	}
 
 	std::vector<int> right(
-		const std::vector<int> b,
+		const Board b,
 		const int n)
 	{
-		Point zero = findZero(b, n);
-		int newPos = zero.x + 1;
+		Structures::Point zero = findZero(b, n);
+		auto newPos = zero.x + 1;
 
 		//Check if move is possible
 		if (newPos > (n - 1))
 		{
-			return std::vector<int>(0);
+			return Board(0);
 		}
 
 		//Create new board based on newPos
 		return swapPos(b, n, zero, newPos + (zero.y * n));
 	}
 
-	std::vector<int> up(
-		const std::vector<int> b,
+	Board up(
+		const Board b,
 		const int n)
 	{
-		Point zero = findZero(b, n);
-		int newPos = zero.y - 1;
+		Structures::Point zero = findZero(b, n);
+		auto newPos = zero.y - 1;
 
 		//Check if move is possible
 		if (newPos < 0)
 		{
-			return std::vector<int>(0);
+			return Board(0);
 		}
 
 		//Create new board based on newPos
