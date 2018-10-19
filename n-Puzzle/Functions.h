@@ -156,10 +156,10 @@ void solve(
 	auto solved = false;
 
 	//Create initial board
-	//curr = Npuzzle::createBoard(n);
+	curr = Npuzzle::createBoard(n);
 
 	//Test state
-	curr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 14, 15 };
+	//curr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 14, 15 };
 
 	addQueue(curr, Npuzzle::Board(n * n), open, closed, n);
 
