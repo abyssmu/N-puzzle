@@ -1,7 +1,10 @@
 #include <assert.h>
 #include <cstdint>
 #include <numeric>
+#include <queue>
 #include <random>
+#include <set>
+#include <unordered_map>
 #include <vector>
 
 namespace Npuzzle
@@ -11,7 +14,6 @@ namespace Npuzzle
 
 	namespace Structures
 	{
-
 		struct Point
 		{
 			int x, y;
@@ -20,7 +22,7 @@ namespace Npuzzle
 		struct Container
 		{
 			int heuristic;
-			std::uint_fast64_t code;
+			Board board;
 		};
 
 		struct LessThanByHeur
@@ -29,10 +31,14 @@ namespace Npuzzle
 				const Container* lhs,
 				const Container* rhs) const
 			{
-				return lhs->heuristic < rhs->heuristic;
+				return lhs->heuristic > rhs->heuristic;
 			}
 		};
 	}
+
+	//using set = std::set<Structures::Container*, Structures::LessThanByHeur>;
+	using set = std::priority_queue<Structures::Container*, std::vector<Structures::Container*>, Structures::LessThanByHeur>;
+	using map = std::unordered_map<i64, i64>;
 
 	Structures::Point findZero(
 		const Board b,
@@ -146,48 +152,6 @@ namespace Npuzzle
 		}
 
 		return b;
-	}
-
-	Board swapPos(
-		const Board b,
-		const int n,
-		const Structures::Point zero,
-		const int newPos)
-	{
-		auto oldPos = 0;
-		Board move(n * n);
-
-		//Calculate old pos
-		oldPos = zero.x + (zero.y * n);
-
-		//Copy current board
-		for (auto i = 0; i < n * n; ++i)
-		{
-			move[i] = b[i];
-		}
-
-		//Swap pos
-		move[oldPos] = move[newPos];
-		move[newPos] = 0;
-
-		return move;
-	}
-
-	Board down(
-		const Board b,
-		const int n)
-	{
-		Structures::Point zero = findZero(b, n);
-		auto newPos = zero.y + 1;
-
-		//Check if move is possible
-		if (newPos > (n - 1))
-		{
-			return Board(0);
-		}
-
-		//Create new board based on newPos
-		return swapPos(b, n, zero, zero.x + (newPos * n));
 	}
 
 	i64 encode(
@@ -376,6 +340,48 @@ namespace Npuzzle
 		const int n)
 	{
 		return manhattan(b, n) + linear(b, n);
+	}
+
+	Board swapPos(
+		const Board b,
+		const int n,
+		const Structures::Point zero,
+		const int newPos)
+	{
+		auto oldPos = 0;
+		Board move(n * n);
+
+		//Calculate old pos
+		oldPos = zero.x + (zero.y * n);
+
+		//Copy current board
+		for (auto i = 0; i < n * n; ++i)
+		{
+			move[i] = b[i];
+		}
+
+		//Swap pos
+		move[oldPos] = move[newPos];
+		move[newPos] = 0;
+
+		return move;
+	}
+
+	Board down(
+		const Board b,
+		const int n)
+	{
+		Structures::Point zero = findZero(b, n);
+		auto newPos = zero.y + 1;
+
+		//Check if move is possible
+		if (newPos > (n - 1))
+		{
+			return Board(0);
+		}
+
+		//Create new board based on newPos
+		return swapPos(b, n, zero, zero.x + (newPos * n));
 	}
 
 	Board left(

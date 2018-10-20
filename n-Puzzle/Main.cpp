@@ -8,10 +8,10 @@ int main()
 	auto b = Npuzzle::Board();
 
 	//Open list contains all unexplored nodes, sorted by heuristic value
-	std::set<Npuzzle::Structures::Container*, Npuzzle::Structures::LessThanByHeur> open;
+	Npuzzle::set open;
 	
 	//Closed list contains all explored nodes, with values set to encoded parent board
-	std::unordered_map<Npuzzle::i64, Npuzzle::i64> closed;
+	Npuzzle::map closed;
 
 	auto n = 4;
 
@@ -34,7 +34,6 @@ int main()
 	std::cout << std::setprecision(5);
 	std::cout << steps << " steps in " << t.count() << " secs.";
 
-	//Cleanup
 	cleanup(open, closed);
 
 	std::cin.get();

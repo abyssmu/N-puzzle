@@ -2,15 +2,13 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <set>
 #include <thread>
-#include <unordered_map>
 
 #include "Npuzzle.h"
 
 bool duplicate(
 	const Npuzzle::Board b,
-	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
+	Npuzzle::map& closed,
 	const int n)
 {
 	return closed.count(Npuzzle::encode(b, n));
@@ -19,24 +17,24 @@ bool duplicate(
 void addQueue(
 	const Npuzzle::Board b,
 	const Npuzzle::Board parent,
-	std::set<Npuzzle::Structures::Container*, Npuzzle::Structures::LessThanByHeur>& open,
-	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
+	Npuzzle::set& open,
+	Npuzzle::map& closed,
 	const int n)
 {
 	auto c = new Npuzzle::Structures::Container;
 
-	c->code = Npuzzle::encode(b, n);
+	c->board = b;
 	c->heuristic = Npuzzle::heuristic(b, n);
 
-	open.insert(c);
+	open.emplace(c);
 
 	closed.insert({ Npuzzle::encode(b, n), Npuzzle::encode(parent, n) });
 }
 
 void addMoves(
 	const Npuzzle::Board b,
-	std::set<Npuzzle::Structures::Container*, Npuzzle::Structures::LessThanByHeur>& open,
-	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
+	Npuzzle::set& open,
+	Npuzzle::map& closed,
 	const int n)
 {
 	auto moves = std::vector<Npuzzle::Board>(4);
@@ -60,10 +58,20 @@ void addMoves(
 }
 
 void cleanup(
-	std::set<Npuzzle::Structures::Container*, Npuzzle::Structures::LessThanByHeur>& open,
-	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed)
+	Npuzzle::set& open,
+	Npuzzle::map& closed)
 {
-	open.clear();
+	//Used for set
+	//open.clear();
+
+	//Used for priority queue
+	while (!open.empty())
+	{
+		delete open.top();
+
+		open.pop();
+	}
+
 	closed.clear();
 }
 
@@ -84,19 +92,19 @@ void printBoard(
 
 int print(
 	Npuzzle::i64 b,
-	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t> closed,
+	Npuzzle::map closed,
 	const int n)
 {
 	std::vector<Npuzzle::Board> solution;
 
-	solution.push_back(Npuzzle::decode(b, n));
-
-	for (auto p = closed[b]; p != 0; p = closed[p])
+	do
 	{
-		solution.push_back(Npuzzle::decode(p, n));
-	}
+		auto p = b;
 
-	system("CLS");
+		solution.push_back(Npuzzle::decode(b, n));
+
+		b = closed[p];
+	} while (b != 0);
 
 	auto size = int(solution.size() - 1);
 
@@ -117,8 +125,8 @@ int print(
 
 void reset(
 	Npuzzle::Board& curr,
-	std::set<Npuzzle::Structures::Container*, Npuzzle::Structures::LessThanByHeur>& open,
-	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
+	Npuzzle::set& open,
+	Npuzzle::map& closed,
 	const int n)
 {
 	cleanup(open, closed);
@@ -149,8 +157,8 @@ void writeBoard(
 
 void solve(
 	Npuzzle::Board& curr,
-	std::set<Npuzzle::Structures::Container*, Npuzzle::Structures::LessThanByHeur>& open,
-	std::unordered_map<std::uint_fast64_t, std::uint_fast64_t>& closed,
+	Npuzzle::set& open,
+	Npuzzle::map& closed,
 	const int n)
 {
 	auto solved = false;
@@ -159,17 +167,19 @@ void solve(
 	curr = Npuzzle::createBoard(n);
 
 	//Test state
-	//curr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 14, 15 };
+	//curr = { 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1, 14, 15 };
 
 	addQueue(curr, Npuzzle::Board(n * n), open, closed, n);
 
 	while (!solved)
 	{
-		auto top = *open.begin();
+		//Used for set
+		//auto top = *open.begin();
+		
+		curr = open.top()->board;
 
-		curr = Npuzzle::decode(top->code, n);
 
-		if (top->heuristic == 0)
+		if (open.top()->heuristic == 0)
 		{
 			solved = true;
 		}
@@ -177,7 +187,12 @@ void solve(
 		{
 			//writeBoard(curr, n);
 
-			open.erase(top);
+			//Used for set
+			//open.erase(top);
+
+			//Used for priority queue
+			delete open.top();
+			open.pop();
 
 			addMoves(curr, open, closed, n);
 		}
