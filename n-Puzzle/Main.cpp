@@ -1,7 +1,5 @@
 #include "Npuzzle.h"
 
-#include <Windows.h>
-
 int getInterval();
 void setMinMax(
 	std::pair<int, double>& p,
