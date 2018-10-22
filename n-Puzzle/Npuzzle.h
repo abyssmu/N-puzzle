@@ -3,10 +3,86 @@
 namespace Npuzzle
 {
 	using i64 = std::uint_fast64_t;
+	using Board = std::vector<int>;
+	using Point = std::pair<int, int>;
+
+	Point findZero(
+		const Board& b,
+		const int& n)
+	{
+		for (auto i = 0; i < n * n; ++i)
+		{
+			if (b[i] == 0)
+			{
+				return { i % n, i / n };
+			}
+		}
+
+		return { -1, -1 };
+	}
 
 	namespace Boards
 	{
-		using Board = std::vector<int>;
+		bool isEven(const int& i)
+		{
+			return (i % 2 == 0);
+		}
+
+		int inversions(
+			const Board& b,
+			const int& n)
+		{
+			auto count = 0;
+
+			for (auto i = 0; i < n * n - 1; ++i)
+			{
+				for (auto j = i + 1; j < n * n; ++j)
+				{
+					if ((b[i] == 0) || (b[j] == 0))
+					{
+						continue;
+					}
+
+					if (b[j] < b[i])
+					{
+						++count;
+					}
+				}
+			}
+
+			return count;
+		}
+
+		bool solvable(
+			const Board& b,
+			const int& n)
+		{
+			auto count = inversions(b, n);
+
+			if (!isEven(n))
+			{
+				return isEven(count);
+			}
+
+			return (isEven(findZero(b, n).second) != isEven(count));
+		}
+
+		Board createBoard(
+			const int& n)
+		{
+			auto b = Board(n * n);
+			auto rng = std::mt19937_64(std::random_device()());
+
+			//Fill vector from 0 to n * n
+			std::iota(b.begin(), b.end(), 0);
+
+			do
+			{
+				std::shuffle(b.begin(), b.end(), rng);
+			} while (!solvable(b, n));
+
+			return b;
+		}
 
 		int linear(
 			const Board& b,
@@ -176,15 +252,10 @@ namespace Npuzzle
 
 	namespace Structures
 	{
-		struct Point
-		{
-			int x, y;
-		};
-
 		struct Container
 		{
 			int heuristic;
-			Boards::Board board;
+			Board board;
 		};
 
 		struct LessThanByHeur
@@ -197,406 +268,340 @@ namespace Npuzzle
 			}
 		};
 	}
+	
+	using pQueue = std::priority_queue<Structures::Container*, std::vector<Structures::Container*>, Structures::LessThanByHeur>;
+	using uMap = std::unordered_map<i64, i64>;
 
-	//using set = std::set<Structures::Container*, Structures::LessThanByHeur>;
-	using set = std::priority_queue<Structures::Container*, std::vector<Structures::Container*>, Structures::LessThanByHeur>;
-	using map = std::unordered_map<i64, i64>;
-
-	Structures::Point findZero(
-		const Boards::Board& b,
-		const int& n)
+	namespace Codes
 	{
-		for (auto i = 0; i < n * n; ++i)
+		Board decode(
+			i64& code,
+			const int& n)
 		{
-			if (b[i] == 0)
+			static Board b(n * n);
+
+			for (auto i = (n * n) - 1; i >= 0; --i)
 			{
-				return { i % n, i / n };
+				auto val = 0;
+
+				//Get first n bits
+				val = code & ((1 << n) - 1);
+
+				//Delete first n bits
+				code = code >> n;
+
+				//Save val in board
+				b[i] = val;
 			}
+
+			return b;
 		}
 
-		return { -1, -1 };
-	}
-
-	bool isEven(const int& i)
-	{
-		return (i % 2 == 0);
-	}
-
-	int inversions(
-		const Boards::Board& b,
-		const int& n)
-	{
-		auto count = 0;
-
-		for (auto i = 0; i < n * n - 1; ++i)
+		i64 encode(
+			const Board& b,
+			const int& n)
 		{
-			for (auto j = i + 1; j < n * n; ++j)
+			i64 code = 0;
+
+			for (auto i = 0; i < n * n; ++i)
 			{
-				if ((b[i] == 0) || (b[j] == 0))
+				//Set first n bits
+				if (i == 0)
 				{
-					continue;
+					code |= b[i];
 				}
-
-				if (b[j] < b[i])
+				//Set rest of bits
+				else
 				{
-					++count;
-				}
-			}
-		}
-
-		return count;
-	}
-
-	bool solvable(
-		const Boards::Board& b,
-		const int& n)
-	{
-		auto count = inversions(b, n);
-
-		if (!isEven(n))
-		{
-			return isEven(count);
-		}
-
-		return (isEven(findZero(b, n).y) != isEven(count));
-	}
-
-	Boards::Board createBoard(
-		const int& n)
-	{
-		auto b = Boards::Board(n * n);
-		auto rng = std::mt19937_64(std::random_device()());
-
-		//Fill vector from 0 to n * n
-		std::iota(b.begin(), b.end(), 0);
-
-		do
-		{
-			std::shuffle(b.begin(), b.end(), rng);
-		} while (!solvable(b, n));
-
-		return b;
-	}
-
-	Boards::Board decode(
-		i64& code,
-		const int& n)
-	{
-		static Boards::Board b(n * n);
-
-		for (auto i = (n * n) - 1; i >= 0; --i)
-		{
-			auto val = 0;
-
-			//Get first n bits
-			val = code & ((1 << n) - 1);
-
-			//Delete first n bits
-			code = code >> n;
-
-			//Save val in board
-			b[i] = val;
-		}
-
-		return b;
-	}
-
-	i64 encode(
-		const Boards::Board& b,
-		const int& n)
-	{
-		i64 code = 0;
-
-		for (auto i = 0; i < n * n; ++i)
-		{
-			//Set first n bits
-			if (i == 0)
-			{
-				code |= b[i];
-			}
-			//Set rest of bits
-			else
-			{
-				code = ((code << n) | b[i]);
-			}
-		}
-
-		return code;
-	}
-
-	Boards::Board swapPos(
-		const Boards::Board& b,
-		const int& n,
-		const Structures::Point& zero,
-		const int& newPos)
-	{
-		auto oldPos = 0;
-		Boards::Board move(n * n);
-
-		//Calculate old pos
-		oldPos = zero.x + (zero.y * n);
-
-		//Copy current board
-		for (auto i = 0; i < n * n; ++i)
-		{
-			move[i] = b[i];
-		}
-
-		//Swap pos
-		move[oldPos] = move[newPos];
-		move[newPos] = 0;
-
-		return move;
-	}
-
-	Boards::Board down(
-		const Boards::Board& b,
-		const int& n)
-	{
-		Structures::Point zero = findZero(b, n);
-		auto newPos = zero.y + 1;
-
-		//Check if move is possible
-		if (newPos > (n - 1))
-		{
-			return Boards::Board(0);
-		}
-
-		//Create new board based on newPos
-		return swapPos(b, n, zero, zero.x + (newPos * n));
-	}
-
-	Boards::Board left(
-		const Boards::Board& b,
-		const int& n)
-	{
-		Structures::Point zero = findZero(b, n);
-		auto newPos = zero.x - 1;
-
-		//Check if move is possible
-		if (newPos < 0)
-		{
-			return Boards::Board(0);
-		}
-
-		//Create new board based on newPos
-		return swapPos(b, n, zero, newPos + (zero.y * n));
-	}
-
-	Boards::Board right(
-		const Boards::Board& b,
-		const int& n)
-	{
-		Structures::Point zero = findZero(b, n);
-		auto newPos = zero.x + 1;
-
-		//Check if move is possible
-		if (newPos > (n - 1))
-		{
-			return Boards::Board(0);
-		}
-
-		//Create new board based on newPos
-		return swapPos(b, n, zero, newPos + (zero.y * n));
-	}
-
-	Boards::Board up(
-		const Boards::Board& b,
-		const int& n)
-	{
-		Structures::Point zero = findZero(b, n);
-		auto newPos = zero.y - 1;
-
-		//Check if move is possible
-		if (newPos < 0)
-		{
-			return Boards::Board(0);
-		}
-
-		//Create new board based on newPos
-		return swapPos(b, n, zero, zero.x + (newPos * n));
-	}
-
-	bool duplicate(
-		const Boards::Board& b,
-		map& closed,
-		const int& n)
-	{
-		return closed.count(encode(b, n));
-	}
-
-	void addQueue(
-		const Boards::Board& b,
-		const Boards::Board& parent,
-		set& open,
-		map& closed,
-		const int& n)
-	{
-		auto c = new Structures::Container;
-
-		c->board = b;
-		c->heuristic = Boards::heuristic(b, n);
-
-		open.emplace(c);
-
-		closed.insert({ encode(b, n), encode(parent, n) });
-	}
-
-	void addMoves(
-		const Boards::Board& b,
-		set& open,
-		map& closed,
-		const int& n)
-	{
-		auto moves = std::vector<Boards::Board>(4);
-		auto parent = b;
-
-		moves[0] = up(b, n);
-		moves[1] = down(b, n);
-		moves[2] = left(b, n);
-		moves[3] = right(b, n);
-
-		for (auto i = 0; i < 4; ++i)
-		{
-			if (moves[i].size() == (n * n))
-			{
-				if (!duplicate(moves[i], closed, n))
-				{
-					addQueue(moves[i], parent, open, closed, n);
+					code = ((code << n) | b[i]);
 				}
 			}
+
+			return code;
 		}
 	}
 
-	void printBoard(
-		const Boards::Board& b,
-		const int& n)
+	namespace Moves
 	{
-		for (auto j = 0; j < n * n; ++j)
+		Board swapPos(
+			const Board& b,
+			const int& n,
+			const Point& zero,
+			const int& newPos)
 		{
-			std::cout << b[j] << "\t";
+			auto oldPos = 0;
+			Board move(n * n);
 
-			if (j % n == 3)
+			//Calculate old pos
+			oldPos = zero.first + (zero.second * n);
+
+			//Copy current board
+			for (auto i = 0; i < n * n; ++i)
 			{
-				std::cout << std::endl;
+				move[i] = b[i];
 			}
+
+			//Swap pos
+			move[oldPos] = move[newPos];
+			move[newPos] = 0;
+
+			return move;
+		}
+
+		Board down(
+			const Board& b,
+			const int& n)
+		{
+			Point zero = findZero(b, n);
+			auto newPos = zero.second + 1;
+
+			//Check if move is possible
+			if (newPos > (n - 1))
+			{
+				return Board(0);
+			}
+
+			//Create new board based on newPos
+			return swapPos(b, n, zero, zero.first + (newPos * n));
+		}
+
+		Board left(
+			const Board& b,
+			const int& n)
+		{
+			Point zero = findZero(b, n);
+			auto newPos = zero.first - 1;
+
+			//Check if move is possible
+			if (newPos < 0)
+			{
+				return Board(0);
+			}
+
+			//Create new board based on newPos
+			return swapPos(b, n, zero, newPos + (zero.second * n));
+		}
+
+		Board right(
+			const Board& b,
+			const int& n)
+		{
+			Point zero = findZero(b, n);
+			auto newPos = zero.first + 1;
+
+			//Check if move is possible
+			if (newPos > (n - 1))
+			{
+				return Board(0);
+			}
+
+			//Create new board based on newPos
+			return swapPos(b, n, zero, newPos + (zero.second * n));
+		}
+
+		Board up(
+			const Board& b,
+			const int& n)
+		{
+			Point zero = findZero(b, n);
+			auto newPos = zero.second - 1;
+
+			//Check if move is possible
+			if (newPos < 0)
+			{
+				return Board(0);
+			}
+
+			//Create new board based on newPos
+			return swapPos(b, n, zero, zero.first + (newPos * n));
 		}
 	}
 
-	std::pair<int, double> print(
-		i64 b,
-		map& closed,
-		const double& t,
-		const bool& solve,
-		const int& n)
+	namespace Solver 
 	{
-		std::vector<Boards::Board> solution;
-
-		do
+		bool duplicate(
+			const Board& b,
+			uMap& closed,
+			const int& n)
 		{
-			auto p = b;
+			return closed.count(Codes::encode(b, n));
+		}
 
-			solution.push_back(decode(b, n));
-
-			b = closed[p];
-		} while (b != 0);
-
-		auto size = int(solution.size() - 1);
-
-		if (solve)
+		void addQueue(
+			const Board& b,
+			const Board& parent,
+			pQueue& open,
+			uMap& closed,
+			const int& n)
 		{
-			for (auto i = size; i >= 0; --i)
+			auto c = new Structures::Container;
+
+			c->board = b;
+			c->heuristic = Boards::heuristic(b, n);
+
+			open.emplace(c);
+
+			closed.insert({ Codes::encode(b, n), Codes::encode(parent, n) });
+		}
+
+		void addMoves(
+			const Board& b,
+			pQueue& open,
+			uMap& closed,
+			const int& n)
+		{
+			auto moves = std::vector<Board>(4);
+			auto parent = b;
+
+			moves[0] = Moves::up(b, n);
+			moves[1] = Moves::down(b, n);
+			moves[2] = Moves::left(b, n);
+			moves[3] = Moves::right(b, n);
+
+			for (auto i = 0; i < 4; ++i)
 			{
-				printBoard(solution[i], n);
-
-				std::this_thread::sleep_for(std::chrono::milliseconds(25));
-
-				if (i != 0)
+				if (moves[i].size() == (n * n))
 				{
-					system("CLS");
+					if (!duplicate(moves[i], closed, n))
+					{
+						addQueue(moves[i], parent, open, closed, n);
+					}
 				}
 			}
 		}
 
-		return { size + 1, t };
-	}
-
-	void writeBoard(
-		const Boards::Board& b,
-		const int& n)
-	{
-		std::ofstream board("board.csv");
-
-		for (auto i = 0; i < n; ++i)
+		void printBoard(
+			const Board& b,
+			const int& n)
 		{
-			for (auto j = 0; j < n; ++j)
+			for (auto j = 0; j < n * n; ++j)
 			{
-				auto k = i * n + j;
+				std::cout << b[j] << "\t";
 
-				board << b[k] << ",";
+				if (j % n == 3)
+				{
+					std::cout << std::endl;
+				}
 			}
-
-			board << std::endl;
-		}
-	}
-
-	void cleanup(
-		set& open,
-		map& closed)
-	{
-		while (!open.empty())
-		{
-			delete open.top();
-
-			open.pop();
 		}
 
-		closed.clear();
-	}
-
-	std::pair<int, double> solve(
-		const bool& solve,
-		const int& n)
-	{
-		//Open list contains all unexplored nodes, sorted by heuristic value
-		Npuzzle::set open;
-
-		//Closed list contains all explored nodes, with values set to encoded parent board
-		Npuzzle::map closed;
-
-		auto curr = Npuzzle::createBoard(n);
-		//curr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15 };
-
-		addQueue(curr, Boards::Board(n * n), open, closed, n);
-
-		auto solved = false;
-		auto start = std::chrono::system_clock::now();
-
-		while (!solved)
+		std::pair<int, double> print(
+			i64 b,
+			uMap& closed,
+			const int& interval,
+			const double& t,
+			const bool& solve,
+			const int& n)
 		{
-			curr = open.top()->board;
+			std::vector<Board> solution;
 
-			if (open.top()->heuristic == 0)
+			do
 			{
-				solved = true;
+				auto p = b;
+
+				solution.push_back(Codes::decode(b, n));
+
+				b = closed[p];
+			} while (b != 0);
+
+			auto size = int(solution.size() - 1);
+
+			if (solve)
+			{
+				for (auto i = size; i >= 0; --i)
+				{
+					printBoard(solution[i], n);
+
+					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+
+					if (i != 0)
+					{
+						system("CLS");
+					}
+				}
 			}
-			else
-			{
-				//writeBoard(curr, n);
 
+			return { size + 1, t };
+		}
+
+		void writeBoard(
+			const Board& b,
+			const int& n)
+		{
+			std::ofstream board("board.csv");
+
+			for (auto i = 0; i < n; ++i)
+			{
+				for (auto j = 0; j < n; ++j)
+				{
+					auto k = i * n + j;
+
+					board << b[k] << ",";
+				}
+
+				board << std::endl;
+			}
+		}
+
+		void cleanup(
+			pQueue& open,
+			uMap& closed)
+		{
+			while (!open.empty())
+			{
 				delete open.top();
-				open.pop();
 
-				addMoves(curr, open, closed, n);
+				open.pop();
 			}
+
+			closed.clear();
 		}
 
-		auto end = std::chrono::system_clock::now();
-		auto t = std::chrono::duration<double>(end - start);
-		auto results = print(encode(curr, n), closed, t.count(), solve, n);
+		std::pair<int, double> solve(
+			const int& interval,
+			const bool& solve,
+			const int& n)
+		{
+			//Open list contains all unexplored nodes, sorted by heuristic value
+			pQueue open;
 
-		cleanup(open, closed);
+			//Closed list contains all explored nodes, with values set to encoded parent board
+			uMap closed;
 
-		return results;
+			auto curr = Boards::createBoard(n);
+			//curr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15 };
+
+			addQueue(curr, Board(n * n), open, closed, n);
+
+			auto solved = false;
+			auto start = std::chrono::system_clock::now();
+
+			while (!solved)
+			{
+				curr = open.top()->board;
+
+				if (open.top()->heuristic == 0)
+				{
+					solved = true;
+				}
+				else
+				{
+					//writeBoard(curr, n);
+
+					delete open.top();
+					open.pop();
+
+					addMoves(curr, open, closed, n);
+				}
+			}
+
+			auto end = std::chrono::system_clock::now();
+			auto t = std::chrono::duration<double>(end - start);
+			auto results = print(Codes::encode(curr, n), closed, interval, t.count(), solve, n);
+
+			cleanup(open, closed);
+
+			return results;
+		}
 	}
 }

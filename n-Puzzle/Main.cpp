@@ -1,5 +1,8 @@
 #include "Npuzzle.h"
 
+#include <Windows.h>
+
+int getInterval();
 void setMinMax(
 	std::pair<int, double>& p,
 	std::pair<int, double>& min,
@@ -13,7 +16,9 @@ int main()
 
 	if (info.first)
 	{
-		auto p = Npuzzle::solve(info.first, info.second);
+		auto interval = getInterval();
+
+		auto p = Npuzzle::Solver::solve(interval, info.first, info.second);
 
 		std::cout << p.first << " steps in\t" << p.second << "s." << std::endl;
 	}
@@ -26,6 +31,16 @@ int main()
 	std::cin.get();
 
 	return 0;
+}
+
+int getInterval()
+{
+	auto interval = 0;
+
+	std::cout << "How long between moves? - t(ms) = " << std::endl;
+	std::cin >> interval;
+
+	return interval;
 }
 
 void setMinMax(
@@ -71,7 +86,7 @@ void solveWatch(std::pair<bool, int> info)
 
 	for (auto i = 0; i < trials; ++i)
 	{
-		auto p = Npuzzle::solve(info.first, info.second);
+		auto p = Npuzzle::Solver::solve(0, info.first, info.second);
 
 		std::cout << p.first << " steps in\t" << p.second << "s." << std::endl;
 
