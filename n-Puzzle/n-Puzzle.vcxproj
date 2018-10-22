@@ -115,7 +115,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Functions.h" />
+    <ClInclude Include="Headers.h" />
     <ClInclude Include="Npuzzle.h" />
   </ItemGroup>
   <ItemGroup>
