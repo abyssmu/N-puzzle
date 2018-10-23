@@ -5,7 +5,7 @@ void setMinMax(
 	std::pair<int, double>& p,
 	std::pair<int, double>& min,
 	std::pair<int, double>& max);
-void solveWatch(std::pair<bool, int> info);
+void trialed(std::pair<bool, int> info);
 std::pair<bool, int> userInput();
 
 int main()
@@ -22,7 +22,7 @@ int main()
 	}
 	else
 	{
-		solveWatch(info);
+		trialed(info);
 	}
 	
 	std::cin.get();
@@ -69,7 +69,7 @@ void setMinMax(
 	}
 }
 
-void solveWatch(std::pair<bool, int> info)
+void trialed(std::pair<bool, int> info)
 {
 	auto trials = 0;
 	auto totalSteps = 0;
@@ -88,7 +88,7 @@ void solveWatch(std::pair<bool, int> info)
 	{
 		auto p = Npuzzle::Solver::solve(0, info.first, info.second);
 
-		std::cout << p.first << " steps in\t" << p.second << "s." << std::endl;
+		std::cout << i << ":\t" << p.first << " steps in\t" << p.second << "s." << std::endl;
 
 		setMinMax(p, min, max);
 

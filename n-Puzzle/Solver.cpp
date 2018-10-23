@@ -19,7 +19,7 @@ void Npuzzle::Solver::addQueue(
 	uMap& closed,
 	const int& n)
 {
-	auto c = new Structures::Container;
+	auto c = new Structures::BoardInfo;
 
 	c->board = b;
 	c->heuristic = BoardFunctions::heuristic(b, n);

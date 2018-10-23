@@ -64,7 +64,7 @@ namespace Npuzzle
 
 	namespace Structures
 	{
-		struct Container
+		struct BoardInfo
 		{
 			int heuristic;
 			Board board;
@@ -73,15 +73,15 @@ namespace Npuzzle
 		struct LessThanByHeur
 		{
 			bool operator()(
-				const Container* lhs,
-				const Container* rhs) const
+				const BoardInfo* lhs,
+				const BoardInfo* rhs) const
 			{
 				return lhs->heuristic > rhs->heuristic;
 			}
 		};
 	}
 	
-	using pQueue = std::priority_queue<Npuzzle::Structures::Container*, std::vector<Npuzzle::Structures::Container*>, Npuzzle::Structures::LessThanByHeur>;
+	using pQueue = std::priority_queue<Npuzzle::Structures::BoardInfo*, std::vector<Npuzzle::Structures::BoardInfo*>, Npuzzle::Structures::LessThanByHeur>;
 	using uMap = std::unordered_map<i64, i64>;
 
 	namespace Codes
