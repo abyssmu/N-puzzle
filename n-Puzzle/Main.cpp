@@ -35,8 +35,10 @@ int getInterval()
 {
 	auto interval = 0;
 
-	std::cout << "How long between moves? - t(ms) = " << std::endl;
+	std::cout << "How long between moves? - t(ms) = ";
 	std::cin >> interval;
+
+	system("CLS");
 
 	return interval;
 }
