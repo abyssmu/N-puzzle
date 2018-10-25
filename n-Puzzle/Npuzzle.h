@@ -3,12 +3,12 @@
 #include <cstdint>
 #include <iostream>
 #include <queue>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace Npuzzle
 {
-	using i64 = std::uint_fast64_t;
 	using Board = std::vector<int>;
 	using Point = std::pair<int, int>;
 
@@ -18,6 +18,10 @@ namespace Npuzzle
 
 	namespace BoardFunctions
 	{
+		std::string encode(
+			const Board& b,
+			const int& n);
+
 		bool isEven(
 			const int& i);
 
@@ -82,18 +86,7 @@ namespace Npuzzle
 	}
 	
 	using pQueue = std::priority_queue<Npuzzle::Structures::BoardInfo*, std::vector<Npuzzle::Structures::BoardInfo*>, Npuzzle::Structures::LessThanByHeur>;
-	using uMap = std::unordered_map<i64, i64>;
-
-	namespace Codes
-	{
-		Board decode(
-			i64& code,
-			const int& n);
-
-		i64 encode(
-			const Board& b,
-			const int& n);
-	}
+	using uMap = std::unordered_map<std::string, Board>;
 
 	namespace Solver 
 	{
@@ -120,7 +113,7 @@ namespace Npuzzle
 			const int& n);
 
 		std::pair<int, double> reverseSolution(
-			i64 b,
+			Board b,
 			uMap& closed,
 			const int& interval,
 			const double& t,

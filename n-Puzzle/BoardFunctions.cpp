@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <numeric>
 #include <random>
+#include <sstream>
 
 Npuzzle::Point Npuzzle::findZero(
 	const Board& b,
 	const int& n)
 {
-	for (auto i = 0; i < n * n; ++i)
+	for (auto i = 0; i < (n * n); ++i)
 	{
 		if (b[i] == 0)
 		{
@@ -17,6 +18,20 @@ Npuzzle::Point Npuzzle::findZero(
 	}
 
 	return { -1, -1 };
+}
+
+std::string Npuzzle::BoardFunctions::encode(
+	const Board& b,
+	const int& n)
+{
+	auto s = std::stringstream("");
+
+	for (auto i = 0; i < (n * n); ++i)
+	{
+		s << b[i];
+	}
+
+	return s.str();
 }
 
 bool Npuzzle::BoardFunctions::isEven(
@@ -31,9 +46,9 @@ int Npuzzle::BoardFunctions::inversions(
 {
 	auto count = 0;
 
-	for (auto i = 0; i < n * n - 1; ++i)
+	for (auto i = 0; i < ((n * n) - 1); ++i)
 	{
-		for (auto j = i + 1; j < n * n; ++j)
+		for (auto j = i + 1; j < (n * n); ++j)
 		{
 			if ((b[i] == 0) || (b[j] == 0))
 			{
@@ -93,7 +108,7 @@ int Npuzzle::BoardFunctions::linear(
 	{
 		for (auto x = 0; x < n; ++x)
 		{
-			auto i = y * n + x;
+			auto i = (y * n) + x;
 
 			if (b[i] == 0)
 			{
@@ -123,7 +138,7 @@ int Npuzzle::BoardFunctions::linear(
 	{
 		for (auto x = 0; x < n; ++x)
 		{
-			auto i = y * n + x;
+			auto i = (y * n) + x;
 
 			if (b[i] == 0)
 			{
@@ -134,7 +149,7 @@ int Npuzzle::BoardFunctions::linear(
 			{
 				for (auto z = y; z < n; ++z)
 				{
-					auto j = z * n + x;
+					auto j = (z * n) + x;
 
 					if (b[j] == 0)
 					{
@@ -153,12 +168,9 @@ int Npuzzle::BoardFunctions::linear(
 
 			if (inRow[i])
 			{
-				auto bI = b[i];
-
 				for (auto z = x + 1; z < n; ++z)
 				{
-					auto j = y * n + z;
-					auto bJ = b[j];
+					auto j = (y * n) + z;
 
 					if (b[j] == 0)
 					{
@@ -167,7 +179,7 @@ int Npuzzle::BoardFunctions::linear(
 
 					if (inRow[j])
 					{
-						if ((bJ < bI) && (0 <= (bI - bJ)) && ((bI - bJ) < n))
+						if ((b[j] < b[i]) && (0 <= (b[i] - b[j])) && ((b[i] - b[j]) < n))
 						{
 							++count;
 						}
@@ -189,10 +201,10 @@ int Npuzzle::BoardFunctions::manhattan(
 	Board solution(n * n);
 	std::iota(solution.begin(), solution.end(), 1);
 
-	solution[n * n - 1] = 0;
+	solution[(n * n) - 1] = 0;
 
 	//Calculate manhattan distance for each value
-	for (auto i = 0; i < n * n; ++i)
+	for (auto i = 0; i < (n * n); ++i)
 	{
 		if (b[i] != solution[i])
 		{
@@ -224,11 +236,11 @@ int Npuzzle::BoardFunctions::manhattan(
 			if ((val % n) == 0)
 			{
 				x = n - 1;
-				y = val / n - 1;
+				y = (val / n) - 1;
 			}
 			else
 			{
-				x = val % n - 1;
+				x = (val % n) - 1;
 				y = val / n;
 			}
 

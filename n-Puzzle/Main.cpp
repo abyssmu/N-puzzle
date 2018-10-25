@@ -107,19 +107,20 @@ void trialed(std::pair<bool, int> info)
 std::pair<bool, int> userInput()
 {
 	auto n = 0;
+	auto max = 5;
 
 	do
 	{
-		if (n > 4)
+		if (n > max)
 		{
 			system("CLS");
 
-			std::cout << "Board size cannot be greater than 4." << std::endl << "This functionality has not been added yet." << std::endl;
+			std::cout << "You don't want to do that." << std::endl << "You're going to have a bad time." << std::endl;
 		}
 
 		std::cout << "Input size of board: ";
 		std::cin >> n;
-	} while (n > 4);
+	} while (n > max);
 
 	system("CLS");
 

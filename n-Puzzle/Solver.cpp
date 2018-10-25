@@ -9,7 +9,7 @@ bool Npuzzle::Solver::duplicate(
 	uMap& closed,
 	const int& n)
 {
-	return closed.count(Codes::encode(b, n));
+	return closed.count(BoardFunctions::encode(b, n));
 }
 
 void Npuzzle::Solver::addQueue(
@@ -26,7 +26,7 @@ void Npuzzle::Solver::addQueue(
 
 	open.emplace(c);
 
-	closed.insert({ Codes::encode(b, n), Codes::encode(p, n) });
+	closed.insert({ BoardFunctions::encode(b, n), p });
 }
 
 void Npuzzle::Solver::addMoves(
@@ -60,11 +60,11 @@ void Npuzzle::Solver::printBoard(
 	const Board& b,
 	const int& n)
 {
-	for (auto j = 0; j < n * n; ++j)
+	for (auto i = 0; i < (n * n); ++i)
 	{
-		std::cout << b[j] << "\t";
+		std::cout << b[i] << "\t";
 
-		if (j % n == 3)
+		if ((i % n) == (n - 1))
 		{
 			std::cout << std::endl;
 		}
@@ -72,7 +72,7 @@ void Npuzzle::Solver::printBoard(
 }
 
 std::pair<int, double> Npuzzle::Solver::reverseSolution(
-	i64 b,
+	Board b,
 	uMap& closed,
 	const int& interval,
 	const double& t,
@@ -85,10 +85,10 @@ std::pair<int, double> Npuzzle::Solver::reverseSolution(
 	{
 		auto p = b;
 
-		solution.push_back(Codes::decode(b, n));
+		solution.push_back(p);
 
-		b = closed[p];
-	} while (b != 0);
+		b = closed[BoardFunctions::encode(p, n)];
+	} while (b != Board(0));
 
 	auto size = int(solution.size() - 1);
 
@@ -157,7 +157,7 @@ std::pair<int, double> Npuzzle::Solver::solve(
 	auto curr = BoardFunctions::createBoard(n);
 	//curr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15 };
 
-	addQueue(curr, Board(n * n), open, closed, n);
+	addQueue(curr, Board(0), open, closed, n);
 
 	auto solved = false;
 	auto start = std::chrono::system_clock::now();
@@ -183,7 +183,7 @@ std::pair<int, double> Npuzzle::Solver::solve(
 
 	auto end = std::chrono::system_clock::now();
 	auto t = std::chrono::duration<double>(end - start);
-	auto results = reverseSolution(Codes::encode(curr, n), closed, interval, t.count(), solve, n);
+	auto results = reverseSolution(curr, closed, interval, t.count(), solve, n);
 
 	cleanup(open, closed);
 
